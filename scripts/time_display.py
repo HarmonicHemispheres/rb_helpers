@@ -32,12 +32,12 @@ if __name__ == '__main__':
     while True:
         console.clear()
 
-        print(f" USA.PST:   {current('US/Pacific')}")
-        print(f" USA.CST:   {current('US/Central')}")
-        print(f" USA.EST:   {current('US/Eastern')}")
+        print(f"USA.PACIFIC:  {current('US/Pacific')}")
+        print(f"USA.CENTRAL:  {current('US/Central')}")
+        print(f"USA.EASTERN:  {current('US/Eastern')}")
         # print(f"   EGYPT:   {current('Egypt')}")
         # print(f"  POLAND:   {current('Poland')}")
-        print(f"   INDIA:   {current('Asia/Kolkata')}")
+        print(f"      INDIA:  {current('Asia/Kolkata')}")
 
         time.sleep(30)
 

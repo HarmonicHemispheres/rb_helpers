@@ -50,7 +50,7 @@ import codecs
 # ------------------ GLOBALS ------------------
 # --- USER PARAMS
 SLEEP_SECONDS = 60*5
-N_POSTS = 17
+N_POSTS = 30
 CHANNELS = "channels.txt"
 NEW_DB = False
 
@@ -191,7 +191,7 @@ def get_yt_channel_page(tag:str, group, icon):
     s_published = '"publishedTimeText":{"simpleText":"' # "}
     s_len = '"lengthText":{"accessibility":{"accessibilityData":{"label":"'
     s_views = '"viewCountText":{"simpleText":"' # "},
-    s_url = '"videoRenderer":{"videoId":"'
+    s_url = '"watchEndpoint":{"videoId":"'
     
     for t in r.text.split(s_title)[1:]:
         try:
@@ -237,6 +237,7 @@ if __name__ == '__main__':
     DB = Database(create_new=NEW_DB)
     console = Console()
     channels_loaded = open_channel_file(CHANNELS)
+    last_sync = None
 
     while True:
         # --- CLEAR SCREEN
@@ -271,9 +272,12 @@ if __name__ == '__main__':
                 )
 
         print(table)
+        if last_sync:
+            console.print(f"Last Sync: {last_sync}")
         
         # --- SLEEP BEFORE UPDATE
-        time.sleep(SLEEP_SECONDS)
+        for step in track(range(SLEEP_SECONDS), description="Next Sync In:"):
+            time.sleep(1)
 
         # --- UPDATE POST DATABASE
         for step in track(range(len(channels_loaded)),
@@ -281,6 +285,8 @@ if __name__ == '__main__':
                           ):
             icon, group, ch = channels_loaded[step]
             get_yt_channel_page(ch, group, icon)
+        last_sync = current_time()
+        
         
 
 
