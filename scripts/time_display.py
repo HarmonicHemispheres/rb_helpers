@@ -22,6 +22,7 @@ def current(zone=None):
     tzone = pytz.timezone(zone)
     now_utc = datetime.now(tz=tzone)
 
+
     return now_utc.strftime('%Y-%m-%d  %I:%M %p  %Z%z')
 
 
