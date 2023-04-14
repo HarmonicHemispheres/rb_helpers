@@ -17,10 +17,14 @@ first create a config for what channels to scrape:
 ```
 
 then configure the global user params:
-SLEEP_SECONDS: how long the script waits before a new pull
-      N_POSTS: how many posts to display in the terminal output
-     CHANNELS: a config file for what channels to pull
-       NEW_DB: decide whether to create a new database on run
+       SLEEP_SECONDS: how long the script waits before a new pull
+             N_POSTS: how many posts to display in the terminal output
+            CHANNELS: a config file for what channels to pull
+              NEW_DB: decide whether to create a new database on run
+BACKUP_AFTER_N_SYNCS: (None)  will not take a backup ever
+                      (<int>) will take a backup every <int> number of syncs 
+         BACKUP_PATH: (None)  will create a new backup with the current datetime stamp
+                      (<str>) will only backup to a specific path
 
 RUN
 > python yt_feed.py
@@ -49,10 +53,12 @@ import codecs
 
 # ------------------ GLOBALS ------------------
 # --- USER PARAMS
-SLEEP_SECONDS = 60*5
-N_POSTS = 30
-CHANNELS = "channels.txt"
-NEW_DB = False
+SLEEP_SECONDS: int        = 60*5
+N_POSTS: int              = 30
+CHANNELS: str             = "channels.txt"
+NEW_DB: bool              = False
+BACKUP_AFTER_N_SYNCS: int = 5
+BACKUP_PATH: str          = "ytstore.duckdb"
 
 # --- OTHER PARAMS
 DB = None
@@ -117,6 +123,19 @@ class Database:
         cursor = self.conn.cursor()
         cursor.execute(sql)
         return [row for row in cursor.fetchall()]
+
+    def backup(self, path: Path=None):
+        # take backup
+        self.conn.close()
+
+        if path:
+            shutil.copy(self.dbfile, f"ytstore_{datetime.now().strftime('%Y%m%d')}.duckdb")
+        else:
+            shutil.copy(self.dbfile, f"{path}")
+
+
+        # restore active connection to db
+        self.conn = duckdb.connect(self.dbfile)        
 
 
 def open_channel_file(path):
@@ -185,12 +204,11 @@ def get_yt_channel_page(tag:str, group, icon):
 
     # with open("YT.html", "w", encoding="utf-8") as fp:
     #     fp.write(r.text)
-    # exit()
 
     s_title = '"title":{"runs":[{"text":"' # then find title=""
-    s_published = '"publishedTimeText":{"simpleText":"' # "}
+    s_published = '"publishedTimeText":{"simpleText":"' # then find "}
     s_len = '"lengthText":{"accessibility":{"accessibilityData":{"label":"'
-    s_views = '"viewCountText":{"simpleText":"' # "},
+    s_views = '"viewCountText":{"simpleText":"' # then find "},
     s_url = '"watchEndpoint":{"videoId":"'
     
     for t in r.text.split(s_title)[1:]:
@@ -238,6 +256,7 @@ if __name__ == '__main__':
     console = Console()
     channels_loaded = open_channel_file(CHANNELS)
     last_sync = None
+    sync_counter = 0
 
     while True:
         # --- CLEAR SCREEN
@@ -286,8 +305,12 @@ if __name__ == '__main__':
             icon, group, ch = channels_loaded[step]
             get_yt_channel_page(ch, group, icon)
         last_sync = current_time()
+        sync_counter += 1
         
-        
+        # --- TAKE BACKUP
+        if sync_counter and sync_counter >= BACKUP_AFTER_N_SYNCS:
+            DB.backup(path=BACKUP_PATH)
+            sync_counter = 0
 
 
 
