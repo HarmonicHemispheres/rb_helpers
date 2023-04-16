@@ -50,15 +50,16 @@ from pathlib import Path
 import shutil
 import uuid
 import codecs
+import sys
 
 # ------------------ GLOBALS ------------------
 # --- USER PARAMS
-SLEEP_SECONDS: int        = 60*5
-N_POSTS: int              = 30
+SLEEP_SECONDS: int        = 60*30
+N_POSTS: int              = 43
 CHANNELS: str             = "channels.txt"
 NEW_DB: bool              = False
 BACKUP_AFTER_N_SYNCS: int = 5
-BACKUP_PATH: str          = "ytstore.duckdb"
+BACKUP_PATH: str          = "ytstore_bk.duckdb"
 
 # --- OTHER PARAMS
 DB = None
@@ -129,9 +130,9 @@ class Database:
         self.conn.close()
 
         if path:
-            shutil.copy(self.dbfile, f"ytstore_{datetime.now().strftime('%Y%m%d')}.duckdb")
-        else:
             shutil.copy(self.dbfile, f"{path}")
+        else:
+            shutil.copy(self.dbfile, f"ytstore_{datetime.now().strftime('%Y%m%d')}.duckdb")
 
 
         # restore active connection to db
@@ -257,6 +258,8 @@ if __name__ == '__main__':
     channels_loaded = open_channel_file(CHANNELS)
     last_sync = None
     sync_counter = 0
+    max_sync_allowed = sys.maxsize - 1000
+    last_backup = None
 
     while True:
         # --- CLEAR SCREEN
@@ -267,17 +270,13 @@ if __name__ == '__main__':
 
         # --- DISPLAY NEW POSTS
         table = Table(title="Youtube Posts")
-        # table.add_column("post_id", style="green4")
         table.add_column("channel", style="white", justify="left")
-        # table.add_column("group", style="green4")
         table.add_column("views", style="green4", justify="left")
         table.add_column("vid_len", style="green4", justify="left")
         table.add_column("title", style="white", justify="left",overflow="fold")
         table.add_column("published_date", style="green4", justify="left")
         table.add_column("published_rel", style="green4", justify="left")
         table.add_column("url", justify="left")
-        # table.add_column("created", style="green4")
-        # table.add_column("group_icon", style="green4")
 
         for row in records:
             table.add_row(
@@ -293,6 +292,8 @@ if __name__ == '__main__':
         print(table)
         if last_sync:
             console.print(f"Last Sync: {last_sync}")
+        if last_backup:
+            print(f"Backup created: {BACKUP_PATH} @ {current_time}")
         
         # --- SLEEP BEFORE UPDATE
         for step in track(range(SLEEP_SECONDS), description="Next Sync In:"):
@@ -308,9 +309,13 @@ if __name__ == '__main__':
         sync_counter += 1
         
         # --- TAKE BACKUP
-        if sync_counter and sync_counter >= BACKUP_AFTER_N_SYNCS:
+        if BACKUP_AFTER_N_SYNCS and sync_counter >= BACKUP_AFTER_N_SYNCS:
             DB.backup(path=BACKUP_PATH)
             sync_counter = 0
+            last_backup = current_time
 
+        # max sure a VERY long running process with no BACKUP never reaches max int
+        if sync_counter >= max_sync_allowed:
+            sync_counter = 0
 
 

@@ -1,3 +1,5 @@
+.dev/
+
 *.duckdb
 *.duckdb.wal
 

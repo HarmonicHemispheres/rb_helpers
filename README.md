@@ -28,6 +28,10 @@
 <br>
 
 # Templates
-- `py_proc` - a class to handle subprocess across platforms
-- `py_typer_cli.py` - simple typer cli template
-- `md_readme.md` - template for repo readme
+- `script.py` - a generic python cli script
+- `typer_cli.py` - simple typer cli template
+- `readme.md` - template for repo readme
+
+# Snippets
+- `proc.py` - a class to handle subprocess across platforms
+- `` - 
