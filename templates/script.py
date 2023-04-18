@@ -3,7 +3,7 @@
 Describe your script here. what does it do or accomplish?
 
 ------------------ INSTALL ------------------
-> pip install rich
+> pip install rich typer
 
 ------------------ USAGE ------------------
 GLOBALS PARAMS::
@@ -27,6 +27,7 @@ from rich.progress import track
 from rich.progress import Progress
 from rich.table import Table
 from pathlib import Path
+import typer
 
 
 # ------------------ GLOBALS ------------------
@@ -49,13 +50,9 @@ FILE_PATH: Path           = Path("random_file.txt")
 # --- MAIN CLASSES
 ...
 
-# --- MAIN METHODS
-...
-
 
 # ------------------ MAIN PROCESS ------------------
-if __name__ == '__main__':
-
+def main():
     # --- VARIABLES
     ...
 
@@ -70,7 +67,9 @@ if __name__ == '__main__':
 
     #     task1 = progress.add_task("[red]Downloading...", total=1000)
     #     task2 = progress.add_task("[green]Processing...", total=1000)
+    pass
 
-
+if __name__ == '__main__':
+    typer.run(main)
 
 

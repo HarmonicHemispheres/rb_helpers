@@ -51,11 +51,12 @@ import shutil
 import uuid
 import codecs
 import sys
+import typer
 
 # ------------------ GLOBALS ------------------
 # --- USER PARAMS
-SLEEP_SECONDS: int        = 60*30
-N_POSTS: int              = 43
+SLEEP_SECONDS: int        = 60*15
+N_POSTS: int              = 25
 CHANNELS: str             = "channels.txt"
 NEW_DB: bool              = False
 BACKUP_AFTER_N_SYNCS: int = 5
@@ -115,12 +116,21 @@ class Database:
         cursor.execute(sql)
         cursor.commit()
 
-    def select_posts(self, n=20):
+    def select_posts(self, n=20, include_groups=[], exclude_groups=[]):
+        print(include_groups, "    ", exclude_groups)
+        where_sql = ""
+        if len(include_groups) > 0:
+            in_g = [f"'{g}'" for g in include_groups]
+            where_sql = f"WHERE grp IN ({','.join(in_g)})"
+        elif len(exclude_groups) > 0:
+            ex_g = [f"'{g}'" for g in exclude_groups]
+            where_sql = f"WHERE grp NOT IN ({','.join(ex_g)})"
         sql = f"""
-        SELECT * FROM posts
+        SELECT * FROM posts {where_sql}
         ORDER BY published DESC
         LIMIT {n}
         """ 
+        print(sql)
         cursor = self.conn.cursor()
         cursor.execute(sql)
         return [row for row in cursor.fetchall()]
@@ -250,7 +260,18 @@ def current_time():
 
 
 # ------------------ MAIN PROCESS ------------------
-if __name__ == '__main__':
+def main(igroups: str=None, egroups: str=None):
+    global DB
+
+    # --- get user input on what groups to display or not display
+    if igroups:
+        in_grps = [g.strip() for g in igroups.split(",")]
+    else:
+        in_grps = []
+    if egroups:
+        ex_grps = [g.strip() for g in egroups.split(",")]
+    else:
+        ex_grps = []
 
     # --- VARIABLES
     DB = Database(create_new=NEW_DB)
@@ -266,7 +287,7 @@ if __name__ == '__main__':
         console.clear()
 
         # --- GET DATA
-        records = reversed(DB.select_posts(n=N_POSTS))
+        records = reversed(DB.select_posts(n=N_POSTS, include_groups=in_grps, exclude_groups=ex_grps))
 
         # --- DISPLAY NEW POSTS
         table = Table(title="Youtube Posts")
@@ -293,7 +314,7 @@ if __name__ == '__main__':
         if last_sync:
             console.print(f"Last Sync: {last_sync}")
         if last_backup:
-            print(f"Backup created: {BACKUP_PATH} @ {current_time}")
+            print(f"Backup created: {BACKUP_PATH} @ {current_time()}")
         
         # --- SLEEP BEFORE UPDATE
         for step in track(range(SLEEP_SECONDS), description="Next Sync In:"):
@@ -318,4 +339,8 @@ if __name__ == '__main__':
         if sync_counter >= max_sync_allowed:
             sync_counter = 0
 
+
+if __name__ == '__main__':
+    typer.run(main)
+    
 
