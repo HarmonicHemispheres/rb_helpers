@@ -1,5 +1,6 @@
-.dev/
 
+clockify.yaml
+.dev/
 *.duckdb
 *.duckdb.wal
 

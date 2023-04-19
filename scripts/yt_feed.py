@@ -32,6 +32,7 @@ RUN
 
 ------------------ DETAILS ------------------
 LICENSE:  MIT
+VERSION:  0.1.0
 
 """
 

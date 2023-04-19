@@ -5,10 +5,17 @@
 --------- INSTALL ---------
 > pip install rich pytz
 
+--------- USAGE ---------
+> python time_display.py
+
+USA.PACIFIC:  2023-04-18  08:56 PM  PDT-0700
+USA.CENTRAL:  2023-04-18  10:56 PM  CDT-0500
+USA.EASTERN:  2023-04-18  11:56 PM  EDT-0400
+      INDIA:  2023-04-19  09:26 AM  IST+0530
 
 --------- DETAILS ---------
 LICENSE:  MIT
-
+VERSION:  0.1.0
 """
 
 from datetime import datetime
