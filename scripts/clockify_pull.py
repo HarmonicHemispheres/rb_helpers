@@ -3,7 +3,7 @@
 Script to pull clockify time entries for the recent N days
 
 # ----------------- DETAILS ----------------- #
-VERSION = 0.1.5
+VERSION = 0.1.6
 
 # ----------------- CREATE CONFIG ----------------- #
 config must be called "clockify.yaml"
@@ -18,7 +18,7 @@ INTERACTIVE: <BOOL>      # if true will wait for user input before quiting progr
 '''
 
 # ----------------- INSTALLS ----------------- #
-> pip install rich pyyaml pyodbc requests pyinstaller
+> pip install rich pyyaml pyodbc requests pyinstaller pytz
 
 # ----------------- BUILD A INSTALLER ----------------- #
 > pyinstaller --onefile --icon .\static\clockify_pull_1.ico --name "clockify_pull_0.1.5.exe" .\scripts\clockify_pull.py 
@@ -30,11 +30,12 @@ INTERACTIVE: <BOOL>      # if true will wait for user input before quiting progr
 import requests
 import pyodbc
 import rich
+import pytz
 from rich.progress import track
 from rich.console import Console
 import yaml
 from pathlib import Path
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from functools import lru_cache
 
 
@@ -137,8 +138,28 @@ def convert_time(minutes):
     hours = minutes // 60
     minutes = minutes % 60
     # format the output as a string with a colon
-    return f"{hours}:{minutes:02d}"
+    # return f"{hours}:{minutes if minutes >= 10 else str(minutes)[1:]}"
+    s_hrs = f"{hours}"
+    s_min = f"{minutes:02d}"
+    if s_hrs.startswith("0"):
+        s_hrs = s_hrs[1:]
+    return f"{hours}:{s_min}"
 
+def utc_to_pst(utc_dt):
+    """
+        REF: Edge Bing Chat
+     PROMPT: write a python method to convert a UTC datetime to PST
+    """
+    # create a timezone object for UTC
+    utc_tz = pytz.timezone("UTC")
+    # create a timezone object for PST
+    pst_tz = pytz.timezone("America/Los_Angeles")
+    # localize the UTC datetime with the UTC timezone
+    utc_dt = utc_tz.localize(utc_dt)
+    # convert the UTC datetime to PST datetime
+    pst_dt = utc_dt.astimezone(pst_tz)
+    # return the PST datetime
+    return pst_dt
     
 def build_time_entry(user_data, time_entry):
     entry = {}
@@ -177,10 +198,15 @@ def build_time_entry(user_data, time_entry):
 
         start_dt = datetime.strptime(time_entry.get("timeInterval").get("start"), "%Y-%m-%dT%H:%M:%SZ")
         end_dt = datetime.strptime(time_entry.get("timeInterval").get("end"), "%Y-%m-%dT%H:%M:%SZ")
-        start_date = start_dt.date()
-        start_time = start_dt.strftime("%I:%M %p")
-        end_date = end_dt.date()
-        end_time = end_dt.strftime("%I:%M %p")
+
+        start_date = utc_to_pst(start_dt).date()
+        start_time = utc_to_pst(start_dt).strftime("%I:%M %p")
+        if start_time.startswith("0"):
+            start_time = start_time[1:]
+        end_date = utc_to_pst(end_dt).date()
+        end_time = utc_to_pst(end_dt).strftime("%I:%M %p")
+        if end_time.startswith("0"):
+            end_time = end_time[1:]
         amount_usd = rate_per_hour_usd * float(duration_hours)
 
         # -- Set Entry values (defines oder of dict too)
@@ -197,8 +223,8 @@ def build_time_entry(user_data, time_entry):
             "Start Time": start_time,
             "End Date": end_date,
             "End Time": end_time,
-            "Duration (h)": duration_hours,
-            "Duration (decimal)": convert_time(duration_minutes),
+            "Duration (h)": convert_time(duration_minutes),
+            "Duration (decimal)": duration_hours,
             "Billable Rate (USD)": rate_per_hour_usd,
             "Billable Amount (USD)": amount_usd,
         }
@@ -207,8 +233,6 @@ def build_time_entry(user_data, time_entry):
         rich.print(f"[ERROR] -> {error}")
 
         raise error
-
-
 
 
 def get_time_entries(users):
@@ -275,7 +299,7 @@ if __name__ == '__main__':
 (/ __| |   / _ \(/ __| |/ /_ _| __| \ / /    | _ \ | | | |  | |   
 | (__| |__| (_) | (__|   < | || _| \   /     |  _/ |_| | |__| |__ 
  \___|____|\___/ \___|_|\_\___|_|   |_|      |_|  \___/|____|____|
-                                                            v0.1.5
+                                                            v0.1.6
     
     """
 
